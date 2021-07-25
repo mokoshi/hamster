@@ -1,15 +1,40 @@
-version: "3"
+version: "3.9"
 
 services:
   api:
+    depends_on:
+      - db
     build:
       context: backend
       dockerfile: Dockerfile
-    command: "air -c .air.toml"
+    command: "air -c .air.ham_api.toml"
     ports:
       - 4100:4100
     volumes:
-      - ./backend:/app/go/backend
+      - ./backend:/app
+
+  trader:
+    depends_on:
+      - db
+    build:
+      context: backend
+      dockerfile: Dockerfile
+    command: "air -c .air.ham_trader.toml"
+    volumes:
+      - ./backend:/app
+
+  backend_cli:
+    depends_on:
+      - db
+    build:
+      context: backend
+      dockerfile: Dockerfile
+      target: backend_base
+    command: "ash"
+    profiles:
+      - backend_cli
+    volumes:
+      - ./backend:/app
 
   db:
     image: mysql:5.7

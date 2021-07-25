@@ -1,10 +1,8 @@
 FROM golang:1.15-alpine
 
-WORKDIR /app/go/backend
+WORKDIR /app
 
-COPY go.mod .
-COPY go.sum .
+COPY . .
 
 RUN go mod download
 RUN go get -u github.com/cosmtrek/air
-COPY . .
