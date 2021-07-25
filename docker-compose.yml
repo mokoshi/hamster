@@ -42,6 +42,7 @@ services:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_USER: local
       MYSQL_PASSWORD: local
+      MYSQL_DATABASE: hamster
       TZ: Asia/Tokyo
     ports:
       - 3306:3306
