@@ -29,7 +29,6 @@ services:
     build:
       context: backend
       dockerfile: Dockerfile
-      target: backend_base
     command: "ash"
     profiles:
       - backend_cli
