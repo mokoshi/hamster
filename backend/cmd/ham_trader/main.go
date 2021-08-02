@@ -2,25 +2,22 @@ package main
 
 import (
 	"fmt"
-	"gorm.io/driver/mysql"
-	"gorm.io/gorm"
 	"hamster/domain/model"
 	"hamster/infra/external"
 	"hamster/infra/persistence"
+	"hamster/infra/persistence/db"
 	"hamster/lib/cc_client"
 	"hamster/usecase"
-	"log"
 	"time"
 )
 
 func main() {
-	dsn := "local:local@tcp(db:3306)/hamster?charset=utf8mb4&parseTime=True&loc=Local"
-	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	err := db.Init()
 	if err != nil {
-		log.Fatal("Failed to connect db...", err)
+		panic(err)
 	}
 
-	orderBooksHistoryPersistence := persistence.NewOrderBooksHistoryPersistence(db)
+	orderBooksHistoryPersistence := persistence.NewOrderBooksHistoryPersistence(db.DB)
 	orderBooksHistoryUsecase := usecase.NewOrderBooksHistoryUsecase(orderBooksHistoryPersistence)
 
 	ccClient := cc_client.NewClient("DUMMY-API-KEY")

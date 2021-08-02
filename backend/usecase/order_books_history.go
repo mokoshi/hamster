@@ -10,6 +10,7 @@ import (
 const FlushBufferSize = 100
 
 type OrderBooksHistoryUsecase interface {
+	GetHistories(from time.Time, to time.Time) ([]*model.OrderBooksHistory, error)
 	WriteWithBuffering(lowestAsk *model.Order, highestBid *model.Order) (*model.OrderBooksHistory, error)
 }
 
@@ -19,6 +20,11 @@ type OrderBooksHistoryUsecaseImpl struct {
 
 func NewOrderBooksHistoryUsecase(orderBooksHistoryRepository repository.OrderBooksHistoryRepository) OrderBooksHistoryUsecase {
 	return &OrderBooksHistoryUsecaseImpl{OrderBooksHistoryRepository: orderBooksHistoryRepository}
+}
+
+func (u *OrderBooksHistoryUsecaseImpl) GetHistories(from time.Time, to time.Time) ([]*model.OrderBooksHistory, error) {
+	histories, err := u.OrderBooksHistoryRepository.Get(from, to)
+	return histories, err
 }
 
 func (u *OrderBooksHistoryUsecaseImpl) WriteWithBuffering(lowestAsk *model.Order, highestBid *model.Order) (*model.OrderBooksHistory, error) {

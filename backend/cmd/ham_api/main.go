@@ -1,35 +1,44 @@
 package main
 
 import (
-	"fmt"
-	"gorm.io/driver/mysql"
-	"gorm.io/gorm"
-	"hamster/domain/model"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"hamster/infra/persistence"
+	"hamster/infra/persistence/db"
 	"hamster/interfaces/handler"
 	"hamster/usecase"
-	"log"
-	"net/http"
+	"time"
 )
 
-func rootHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "<h1>hamster neko pokemon 3<h1>")
+const location = "Asia/Tokyo"
+
+func init() {
+	loc, err := time.LoadLocation(location)
+	if err != nil {
+		loc = time.FixedZone(location, 9*60*60)
+	}
+	time.Local = loc
 }
 
 func main() {
-	dsn := "local:local@tcp(db:3306)/hamster?charset=utf8mb4&parseTime=True&loc=Local"
-	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	err := db.Init()
 	if err != nil {
-		log.Fatal("Failed to connect db...", err)
+		panic(err)
 	}
 
-	db.AutoMigrate(&model.TradingHistory{}, &model.OrderBooksHistory{})
+	//tradingHistoryPersistence := persistence.NewTradingHistoryPersistence(db.DB)
+	//tradingHistoryUsecase := usecase.NewTradingHistoryUsecase(tradingHistoryPersistence)
+	//tradingHistoryHandler := handler.NewTradingHistoryHandler(tradingHistoryUsecase)
 
-	tradingHistoryPersistence := persistence.NewTradingHistoryPersistence(db)
-	tradingHistoryUsecase := usecase.NewTradingHistoryUsecase(tradingHistoryPersistence)
-	tradingHistoryHandler := handler.NewTradingHistoryHandler(tradingHistoryUsecase)
+	orderBooksHistoryPersistence := persistence.NewOrderBooksHistoryPersistence(db.DB)
+	orderBooksHistoryUsecase := usecase.NewOrderBooksHistoryUsecase(orderBooksHistoryPersistence)
+	orderBooksHistoryHandler := handler.NewOrderBooksHistoryHandler(orderBooksHistoryUsecase)
+	healthCheckHandler := handler.NewHealthCheckHistoryHandler()
 
-	http.HandleFunc("/", rootHandler)
-	http.HandleFunc("/trade", tradingHistoryHandler.HandleTrade)
-	log.Fatal(http.ListenAndServe(":4100", nil))
+	e := echo.New()
+	e.Use(middleware.CORS())
+
+	e.GET("/health_check", healthCheckHandler.Check)
+	e.GET("/order_books_histories", orderBooksHistoryHandler.GetHistories)
+	e.Logger.Fatal(e.Start(":4100"))
 }

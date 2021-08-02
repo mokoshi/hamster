@@ -4,6 +4,7 @@ import (
 	"gorm.io/gorm"
 	"hamster/domain/model"
 	"hamster/domain/repository"
+	"time"
 )
 
 type OrderBooksHistoryPersistence struct {
@@ -13,6 +14,12 @@ type OrderBooksHistoryPersistence struct {
 
 func NewOrderBooksHistoryPersistence(db *gorm.DB) repository.OrderBooksHistoryRepository {
 	return &OrderBooksHistoryPersistence{Db: db}
+}
+
+func (obhp *OrderBooksHistoryPersistence) Get(from time.Time, to time.Time) ([]*model.OrderBooksHistory, error) {
+	var histories []*model.OrderBooksHistory
+	obhp.Db.Where("time BETWEEN ? AND ?", from, to).Find(&histories)
+	return histories, nil
 }
 
 func (obhp *OrderBooksHistoryPersistence) AddToBuffer(orderBooksHistory *model.OrderBooksHistory) (int, error) {

@@ -2,4 +2,4 @@
 
 set -eux
 
-docker-compose run --rm api
+docker-compose run --rm --service-ports api
