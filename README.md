@@ -11,4 +11,5 @@ $ docker-compose up
 
 # start cli
 $ docker-compose run --rm backend_cli
+app# go get -u {pkg}
 ```

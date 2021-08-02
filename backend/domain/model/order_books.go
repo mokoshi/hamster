@@ -6,8 +6,8 @@ import (
 
 type OrderBooks struct {
 	// Asks, Bids はそれぞれ [Price]: *Order の map で保持
-	Asks map[float64]*Order // 売り
-	Bids map[float64]*Order // 買い
+	Asks map[float64]*Order // 売り注文
+	Bids map[float64]*Order // 買い注文
 }
 
 type Order struct {

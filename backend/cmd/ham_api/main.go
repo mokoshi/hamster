@@ -23,7 +23,7 @@ func main() {
 		log.Fatal("Failed to connect db...", err)
 	}
 
-	db.AutoMigrate(&model.TradingHistory{})
+	db.AutoMigrate(&model.TradingHistory{}, &model.OrderBooksHistory{})
 
 	tradingHistoryPersistence := persistence.NewTradingHistoryPersistence(db)
 	tradingHistoryUsecase := usecase.NewTradingHistoryUsecase(tradingHistoryPersistence)
