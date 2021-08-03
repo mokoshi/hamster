@@ -1,6 +1,5 @@
 import { Box, SimpleGrid } from '@chakra-ui/react';
 import { useOrderBookHistoriesQuery } from '../model/orderBooksHistory';
-import { Suspense } from 'react';
 import History from './history';
 
 export default function Home() {
@@ -10,9 +9,7 @@ export default function Home() {
   return (
     <SimpleGrid columns={2} spacing={10}>
       <Box>
-        <Suspense fallback={<div>loading</div>}>
-          <History />
-        </Suspense>
+        <History />
       </Box>
     </SimpleGrid>
   );

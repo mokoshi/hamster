@@ -5,16 +5,7 @@ import { Hydrate } from 'react-query/hydration';
 import { useState } from 'react';
 
 function MyApp({ Component, pageProps }: AppProps) {
-  const [queryClient] = useState(
-    () =>
-      new QueryClient({
-        defaultOptions: {
-          queries: {
-            suspense: true,
-          },
-        },
-      }),
-  );
+  const [queryClient] = useState(() => new QueryClient());
   return (
     <QueryClientProvider client={queryClient}>
       <Hydrate state={pageProps.dehydratedState}>

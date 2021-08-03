@@ -7,10 +7,6 @@ module.exports = (phase) => {
 
   return {
     reactStrictMode: true,
-    react: {
-      useSuspense: false,
-      wait: true,
-    },
     env: {
       // TODO 環境によって切り替える
       ApiBaseUrl: isDev ? 'http://localhost:4100' : 'http://localhost:4100',
