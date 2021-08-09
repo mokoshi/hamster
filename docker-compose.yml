@@ -8,6 +8,8 @@ services:
       context: backend
       dockerfile: Dockerfile
     command: "air -c .air.ham_api.toml"
+    env_file:
+      - ./backend/.env
     ports:
       - 4100:4100
     volumes:
@@ -20,6 +22,8 @@ services:
       context: backend
       dockerfile: Dockerfile
     command: "air -c .air.ham_trader.toml"
+    env_file:
+      - ./backend/.env
     volumes:
       - ./backend:/app
 
@@ -30,6 +34,8 @@ services:
       context: backend
       dockerfile: Dockerfile
     command: "ash"
+    env_file:
+      - ./backend/.env
     profiles:
       - backend_cli
     volumes:

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"hamster/common"
 	"hamster/domain/model"
 	"hamster/infra/external"
 	"hamster/infra/persistence"
@@ -12,6 +13,8 @@ import (
 )
 
 func main() {
+	common.Init()
+
 	err := db.Init()
 	if err != nil {
 		panic(err)
@@ -20,7 +23,7 @@ func main() {
 	orderBooksHistoryPersistence := persistence.NewOrderBooksHistoryPersistence(db.DB)
 	orderBooksHistoryUsecase := usecase.NewOrderBooksHistoryUsecase(orderBooksHistoryPersistence)
 
-	ccClient := cc_client.NewClient("DUMMY-API-KEY")
+	ccClient := cc_client.NewClient(common.Env.CoincheckApiKey, common.Env.CoincheckApiSecret)
 
 	orderBookRepository := external.NewOrderBooksExternal(ccClient)
 

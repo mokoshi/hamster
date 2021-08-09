@@ -1,5 +1,5 @@
 import apiClient from '../lib/apiClient';
-import { useSuspenseQuery } from '../hooks/useSuspenceQuery';
+import { useQuery } from 'react-query';
 
 export class OrderBooksHistory {
   id: number;
@@ -28,7 +28,7 @@ export class OrderBooksHistory {
 
 export function useOrderBookHistoriesQuery(from: string, to: string) {
   const key = `${from}-${to}`;
-  return useSuspenseQuery<OrderBooksHistory[]>(key, async () => {
+  return useQuery<OrderBooksHistory[]>(key, async () => {
     const { data } = await apiClient.get('/order_books_histories', {
       params: { from, to },
     });

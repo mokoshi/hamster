@@ -29,7 +29,7 @@ func (obe *OrderBooksExternal) Get(refresh bool) (*model.OrderBooks, error) {
 		return nil, err
 	}
 
-	asks, bids := ParseOrders(res)
+	asks, bids := parseOrders(res)
 
 	obe.orderBooks = model.NewOrderBooks(asks, bids)
 
@@ -46,7 +46,7 @@ func (obe *OrderBooksExternal) Subscribe(listener func(books *model.OrderBooks))
 	}
 
 	err := obe.Client.SubscribeOrderBooks(func(pair string, diff *cc_client.OrderBooks) {
-		asks, bids := ParseOrders(diff)
+		asks, bids := parseOrders(diff)
 		obe.orderBooks.Update(asks, bids)
 
 		listener(obe.orderBooks)
@@ -55,8 +55,8 @@ func (obe *OrderBooksExternal) Subscribe(listener func(books *model.OrderBooks))
 	return err
 }
 
-func ParseOrders(res *cc_client.OrderBooks) (asks []*model.Order, bids []*model.Order) {
-	ParseOrder := func(res [2]interface{}) (*model.Order, error) {
+func parseOrders(res *cc_client.OrderBooks) (asks []*model.OrderBookItem, bids []*model.OrderBookItem) {
+	ParseOrder := func(res [2]interface{}) (*model.OrderBookItem, error) {
 		price, err := strconv.ParseFloat(res[0].(string), 64)
 		if err != nil {
 			return nil, err
@@ -65,11 +65,11 @@ func ParseOrders(res *cc_client.OrderBooks) (asks []*model.Order, bids []*model.
 		if err != nil {
 			return nil, err
 		}
-		return &model.Order{Price: price, Quantity: quantity}, nil
+		return &model.OrderBookItem{Price: price, Quantity: quantity}, nil
 	}
 
-	asks = make([]*model.Order, len(res.Asks))
-	bids = make([]*model.Order, len(res.Bids))
+	asks = make([]*model.OrderBookItem, len(res.Asks))
+	bids = make([]*model.OrderBookItem, len(res.Bids))
 
 	for i, ask := range res.Asks {
 		order, err := ParseOrder(ask)

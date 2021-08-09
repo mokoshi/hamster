@@ -3,7 +3,9 @@ module hamster
 go 1.15
 
 require (
+	github.com/BurntSushi/toml v0.4.1
 	github.com/gorilla/websocket v1.4.2
+	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/labstack/echo/v4 v4.4.0
 	github.com/mattn/go-isatty v0.0.13 // indirect
 	go.uber.org/atomic v1.9.0 // indirect

@@ -4,8 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/websocket"
+	"hamster/lib/clog"
+	"hamster/lib/util"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -17,16 +20,23 @@ const (
 type Client struct {
 	ApiUrl        string
 	WebSocketUrl  string
-	apiKey        string
+	ApiKey        string
+	ApiSecret     string
 	HTTPClient    *http.Client
 	WebSocketConn *websocket.Conn
 }
 
-func NewClient(apiKey string) *Client {
+type RequestOptions struct {
+	Params        interface{}
+	Authorization bool
+}
+
+func NewClient(apiKey string, apiSecret string) *Client {
 	return &Client{
 		ApiUrl:       ApiUrl,
 		WebSocketUrl: WebSocketUrl,
-		apiKey:       apiKey,
+		ApiKey:       apiKey,
+		ApiSecret:    apiSecret,
 		HTTPClient: &http.Client{
 			Timeout: time.Second * 5,
 		},
@@ -34,22 +44,49 @@ func NewClient(apiKey string) *Client {
 }
 
 func (c *Client) GetOrderBooks() (*OrderBooks, error) {
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s/order_books", c.ApiUrl), nil)
-	if err != nil {
-		return nil, err
+	opts := &RequestOptions{
+		Authorization: false,
 	}
-
 	res := OrderBooks{}
-	if err := c.sendRequest(req, &res); err != nil {
-		fmt.Println(err)
+	if err := c.sendRequest("GET", "/order_books", opts, &res); err != nil {
+		clog.Logger.Error(err)
 		return nil, err
 	}
 
 	return &res, nil
 }
 
+func (c *Client) GetOpenOrders() (*OpenOrders, error) {
+	opts := &RequestOptions{
+		Authorization: true,
+	}
+	res := OpenOrders{}
+	if err := c.sendRequest("GET", "/exchange/orders/opens", opts, &res); err != nil {
+		clog.Logger.Error(err)
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+func (c *Client) GetBalance() error {
+	opts := &RequestOptions{
+		Authorization: true,
+	}
+	res := Balance{}
+	if err := c.sendRequest("GET", "/accounts/balance", opts, &res); err != nil {
+		clog.Logger.Error(err)
+		return err
+	}
+
+	// TODO
+	fmt.Println(res)
+
+	return nil
+}
+
 func (c *Client) SubscribeOrderBooks(listener func(pair string, diff *OrderBooks)) error {
-	if err := c.ConnectWebSocket(); err != nil {
+	if err := c.connectWebSocket(); err != nil {
 		return err
 	}
 
@@ -95,7 +132,7 @@ func (c *Client) SubscribeOrderBooks(listener func(pair string, diff *OrderBooks
 	return c.WebSocketConn.WriteMessage(websocket.TextMessage, message)
 }
 
-func (c *Client) ConnectWebSocket() error {
+func (c *Client) connectWebSocket() error {
 	if c.WebSocketConn != nil {
 		return nil
 	}
@@ -109,11 +146,24 @@ func (c *Client) ConnectWebSocket() error {
 	return nil
 }
 
-func (c *Client) sendRequest(req *http.Request, responseBody interface{}) error {
+func (c *Client) sendRequest(method string, path string, options *RequestOptions, responseBody interface{}) error {
+	url := c.ApiUrl + path
+	req, err := http.NewRequest(method, url, nil)
+	if err != nil {
+		return err
+	}
+
 	req.Header.Set("Content-Type", "application/json; charset=utf-8")
 	req.Header.Set("Accept", "application/json; charset=utf-8")
-	// TODO apikeyを入れる
-	//req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.apiKey))
+	if options.Authorization {
+		nonce := strconv.FormatInt(time.Now().Unix(), 10)
+		body := ""
+		signature := util.HmacSha256(nonce+url+body, c.ApiSecret)
+
+		req.Header.Set("ACCESS-KEY", c.ApiKey)
+		req.Header.Set("ACCESS-NONCE", nonce)
+		req.Header.Set("ACCESS-SIGNATURE", signature)
+	}
 
 	res, err := c.HTTPClient.Do(req)
 	if err != nil {
