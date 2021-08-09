@@ -1,36 +1,38 @@
-import {
-  Spinner,
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
-  TableCaption,
-  AlertIcon,
-  Alert,
-} from '@chakra-ui/react';
+import { Table, Thead, Tbody, Tr, Th, Td, AlertIcon, Alert, Skeleton } from '@chakra-ui/react';
 import { useOpenOrdersQuery } from '../model/order';
+import React from 'react';
+import Card from '../components/Card';
 
-export default function OpenOrders() {
-  const { data: orders, isLoading } = useOpenOrdersQuery();
+const OpenOrders: React.FC = () => {
+  return (
+    <Card title='未約定の注文一覧'>
+      <OpenOrdersContent />
+    </Card>
+  );
+};
 
-  if (isLoading || !orders) {
-    return <Spinner />;
-  }
+const OpenOrdersContent: React.FC = () => {
+  const { data: orders, isLoading, isError } = useOpenOrdersQuery();
 
-  if (orders.length === 0) {
+  if (isError) {
     return (
-      <Alert status='info'>
+      <Alert status='error'>
         <AlertIcon />
-        注文がありません
+        エラーが発生しました
       </Alert>
     );
   }
+  if (isLoading || !orders) {
+    return <Skeleton height={40} />;
+  }
 
-  return (
+  return orders.length === 0 ? (
+    <Alert status='info'>
+      <AlertIcon />
+      注文がありません
+    </Alert>
+  ) : (
     <Table>
-      <TableCaption>未約定の注文一覧</TableCaption>
       <Thead>
         <Tr>
           <Th>id</Th>
@@ -59,4 +61,6 @@ export default function OpenOrders() {
       </Tbody>
     </Table>
   );
-}
+};
+
+export default OpenOrders;

@@ -2,40 +2,35 @@ import apiClient from '../lib/apiClient';
 import { useQuery } from 'react-query';
 
 export class Order {
-  id: number;
-  orderType: string;
-  rate: number;
-  pair: string;
-  pendingAmount: number;
-  pendingMarketBuyAmount: number;
-  stopLossRate: number;
-  createdAt: Date;
-
-  constructor(res: {
-    id: number;
-    orderType: string;
-    rate: number;
-    pair: string;
-    pendingAmount: number;
-    pendingMarketBuyAmount: number;
-    stopLossRate: number;
-    createdAt: Date;
-  }) {
-    this.id = res.id;
-    this.orderType = res.orderType;
-    this.rate = res.rate;
-    this.pair = res.pair;
-    this.pendingAmount = res.pendingAmount;
-    this.pendingMarketBuyAmount = res.pendingMarketBuyAmount;
-    this.stopLossRate = res.stopLossRate;
-    this.createdAt = res.createdAt;
-  }
+  constructor(
+    public id: number,
+    public orderType: string,
+    public rate: number,
+    public pair: string,
+    public pendingAmount: number,
+    public pendingMarketBuyAmount: number,
+    public stopLossRate: number,
+    public createdAt: Date,
+  ) {}
 }
 
 export function useOpenOrdersQuery() {
-  return useQuery<Order[]>('', async () => {
-    const { data } = await apiClient.get('/orders/open');
+  const path = '/exchange/open_orders';
+  return useQuery<Order[]>(path, async () => {
+    const { data } = await apiClient.get(path);
 
-    return data.map((h: any) => new Order(h));
+    return data.map(
+      (r: any) =>
+        new Order(
+          r.id,
+          r.orderType,
+          r.rate,
+          r.pair,
+          r.pendingAmount,
+          r.pendingMarketBuyAmount,
+          r.stopLossRate,
+          r.createdAt,
+        ),
+    );
   });
 }

@@ -6,6 +6,7 @@ import (
 	"github.com/gorilla/websocket"
 	"hamster/lib/clog"
 	"hamster/lib/util"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
@@ -69,20 +70,17 @@ func (c *Client) GetOpenOrders() (*OpenOrders, error) {
 	return &res, nil
 }
 
-func (c *Client) GetBalance() error {
+func (c *Client) GetBalance() (*Balance, error) {
 	opts := &RequestOptions{
 		Authorization: true,
 	}
 	res := Balance{}
 	if err := c.sendRequest("GET", "/accounts/balance", opts, &res); err != nil {
 		clog.Logger.Error(err)
-		return err
+		return nil, err
 	}
 
-	// TODO
-	fmt.Println(res)
-
-	return nil
+	return &res, nil
 }
 
 func (c *Client) SubscribeOrderBooks(listener func(pair string, diff *OrderBooks)) error {
@@ -156,7 +154,7 @@ func (c *Client) sendRequest(method string, path string, options *RequestOptions
 	req.Header.Set("Content-Type", "application/json; charset=utf-8")
 	req.Header.Set("Accept", "application/json; charset=utf-8")
 	if options.Authorization {
-		nonce := strconv.FormatInt(time.Now().Unix(), 10)
+		nonce := strconv.FormatInt(time.Now().UnixNano(), 10)
 		body := ""
 		signature := util.HmacSha256(nonce+url+body, c.ApiSecret)
 
@@ -173,7 +171,12 @@ func (c *Client) sendRequest(method string, path string, options *RequestOptions
 	defer res.Body.Close()
 
 	if res.StatusCode < http.StatusOK || res.StatusCode >= http.StatusBadRequest {
-		return fmt.Errorf("unknown error, status code: %d", res.StatusCode)
+		bodyBytes, err := ioutil.ReadAll(res.Body)
+		if err != nil {
+			clog.Logger.Fatal(err)
+		}
+		bodyString := string(bodyBytes)
+		return fmt.Errorf("api request error [%d]: %s", res.StatusCode, bodyString)
 	}
 
 	if err = json.NewDecoder(res.Body).Decode(&responseBody); err != nil {

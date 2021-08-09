@@ -39,19 +39,23 @@ func main() {
 
 	orderBooksHistoryPersistence := persistence.NewOrderBooksHistoryPersistence(db.DB)
 	orderExternal := external.NewOrderExternal(ccClient)
+	balanceExternal := external.NewBalanceExternal(ccClient)
 
 	orderBooksHistoryUsecase := usecase.NewOrderBooksHistoryUsecase(orderBooksHistoryPersistence)
-	orderUsecase := usecase.NewOrderUsecase(orderExternal)
+	exchangeUsecase := usecase.NewExchangeUsecase(orderExternal)
+	accountUsecase := usecase.NewAccountUsecase(balanceExternal)
 
 	orderBooksHistoryHandler := handler.NewOrderBooksHistoryHandler(orderBooksHistoryUsecase)
 	healthCheckHandler := handler.NewHealthCheckHistoryHandler()
-	orderHandler := handler.NewOrderHandler(orderUsecase)
+	exchangeHandler := handler.NewExchangeHandler(exchangeUsecase)
+	accountHandler := handler.NewAccountHandler(accountUsecase)
 
 	e := echo.New()
 	e.Use(middleware.CORS())
 
 	e.GET("/health_check", healthCheckHandler.Check)
 	e.GET("/order_books_histories", orderBooksHistoryHandler.GetHistories)
-	e.GET("/orders/open", orderHandler.GetOpenOrders)
+	e.GET("/exchange/open_orders", exchangeHandler.GetOpenOrders)
+	e.GET("/account/balance", accountHandler.GetBalance)
 	e.Logger.Fatal(e.Start(":4100"))
 }
