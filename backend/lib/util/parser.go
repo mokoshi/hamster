@@ -9,3 +9,11 @@ func ParseFloat64(v string) float64 {
 	}
 	return f
 }
+
+func ParseInt64(v string) int64 {
+	i, err := strconv.ParseInt(v, 10, 64)
+	if err != nil {
+		return 0
+	}
+	return i
+}

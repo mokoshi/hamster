@@ -10,18 +10,7 @@ import (
 	"hamster/interfaces/handler"
 	"hamster/lib/cc_client"
 	"hamster/usecase"
-	"time"
 )
-
-const location = "Asia/Tokyo"
-
-func init() {
-	loc, err := time.LoadLocation(location)
-	if err != nil {
-		loc = time.FixedZone(location, 9*60*60)
-	}
-	time.Local = loc
-}
 
 func main() {
 	common.Init()

@@ -1,38 +1,39 @@
 import apiClient from '../lib/apiClient';
 import { useQuery } from 'react-query';
+import dayjs from 'dayjs';
 
 export class OrderBooksHistory {
-  id: number;
-  time: Date;
-  lowestAskPrice: number;
-  lowestAskQuantity: number;
-  highestBidPrice: number;
-  highestBidQuantity: number;
+  unix: number;
 
-  constructor(res: {
-    id: number;
-    time: Date;
-    lowestAskPrice: number;
-    lowestAskQuantity: number;
-    highestBidPrice: number;
-    highestBidQuantity: number;
-  }) {
-    this.id = res.id;
-    this.time = res.time;
-    this.lowestAskPrice = res.lowestAskPrice;
-    this.lowestAskQuantity = res.lowestAskQuantity;
-    this.highestBidPrice = res.highestBidPrice;
-    this.highestBidQuantity = res.highestBidQuantity;
+  constructor(
+    public id: number,
+    public time: Date,
+    public lowestAskPrice: number,
+    public lowestAskQuantity: number,
+    public highestBidPrice: number,
+    public highestBidQuantity: number,
+  ) {
+    this.unix = dayjs(time).valueOf();
   }
 }
 
-export function useOrderBookHistoriesQuery(from: string, to: string) {
+export function useOrderBookHistoriesQuery(from: number, to: number) {
   const key = `${from}-${to}`;
   return useQuery<OrderBooksHistory[]>(key, async () => {
     const { data } = await apiClient.get('/order_books_histories', {
       params: { from, to },
     });
 
-    return data.map((h: any) => new OrderBooksHistory(h));
+    return data.map(
+      (h: any) =>
+        new OrderBooksHistory(
+          h.id,
+          h.time,
+          h.lowestAskPrice,
+          h.lowestAskQuantity,
+          h.highestBidPrice,
+          h.highestBidQuantity,
+        ),
+    );
   });
 }

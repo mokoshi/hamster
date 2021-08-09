@@ -3,6 +3,7 @@ package handler
 import (
 	"github.com/labstack/echo/v4"
 	"hamster/interfaces/resource"
+	"hamster/lib/util"
 	"hamster/usecase"
 	"net/http"
 	"time"
@@ -23,15 +24,8 @@ func NewOrderBooksHistoryHandler(u usecase.OrderBooksHistoryUsecase) OrderBooksH
 }
 
 func (u OrderBooksHistoryHandlerImpl) GetHistories(c echo.Context) (err error) {
-	var fromTime, toTime time.Time
-	fromTime, err = time.Parse("2006-01-02", c.QueryParam("from"))
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
-	toTime, err = time.Parse("2006-01-02", c.QueryParam("to"))
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
+	fromTime := time.Unix(util.ParseInt64(c.QueryParam("from")), 0)
+	toTime := time.Unix(util.ParseInt64(c.QueryParam("to")), 0)
 
 	histories, err := u.OrderBooksHistoryUsecase.GetHistories(fromTime, toTime)
 

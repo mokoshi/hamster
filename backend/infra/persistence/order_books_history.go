@@ -18,7 +18,7 @@ func NewOrderBooksHistoryPersistence(db *gorm.DB) repository.OrderBooksHistoryRe
 
 func (obhp *OrderBooksHistoryPersistence) Get(from time.Time, to time.Time) ([]*model.OrderBooksHistory, error) {
 	var histories []*model.OrderBooksHistory
-	obhp.Db.Where("time BETWEEN ? AND ?", from, to).Find(&histories)
+	obhp.Db.Where("time BETWEEN ? AND ?", from, to).Order("time").Find(&histories)
 	return histories, nil
 }
 
