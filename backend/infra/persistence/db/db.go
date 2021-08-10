@@ -4,6 +4,7 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"hamster/domain/model"
+	"hamster/infra/persistence/db/gorm_model"
 	"hamster/lib/clog"
 )
 
@@ -19,7 +20,11 @@ func Init() (err error) {
 	}
 
 	// マイグレーションも走らせちゃう
-	err = DB.AutoMigrate(&model.TradingHistory{}, &model.OrderBooksHistory{})
+	err = DB.AutoMigrate(
+		&model.TradingHistory{},
+		&gorm_model.OrderBooksHistory{},
+		&gorm_model.RateHistory{},
+	)
 	if err != nil {
 		clog.Logger.Fatal("Failed to run auto-migration...", err)
 		return err

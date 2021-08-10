@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"strconv"
 	"time"
 )
@@ -28,8 +29,8 @@ type Client struct {
 }
 
 type RequestOptions struct {
-	Params        interface{}
 	Authorization bool
+	Params        url.Values
 }
 
 func NewClient(apiKey string, apiSecret string) *Client {
@@ -50,6 +51,24 @@ func (c *Client) GetOrderBooks() (*OrderBooks, error) {
 	}
 	res := OrderBooks{}
 	if err := c.sendRequest("GET", "/order_books", opts, &res); err != nil {
+		clog.Logger.Error(err)
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+func (c *Client) GetRate(orderType string, pair string) (*Rate, error) {
+	opts := &RequestOptions{
+		Authorization: false,
+		Params: url.Values{
+			"order_type": {orderType},
+			"pair":       {pair},
+			"amount":     {"1"},
+		},
+	}
+	res := Rate{}
+	if err := c.sendRequest("GET", "/exchange/orders/rate", opts, &res); err != nil {
 		clog.Logger.Error(err)
 		return nil, err
 	}
@@ -153,6 +172,7 @@ func (c *Client) sendRequest(method string, path string, options *RequestOptions
 
 	req.Header.Set("Content-Type", "application/json; charset=utf-8")
 	req.Header.Set("Accept", "application/json; charset=utf-8")
+
 	if options.Authorization {
 		nonce := strconv.FormatInt(time.Now().UnixNano(), 10)
 		body := ""
@@ -161,6 +181,9 @@ func (c *Client) sendRequest(method string, path string, options *RequestOptions
 		req.Header.Set("ACCESS-KEY", c.ApiKey)
 		req.Header.Set("ACCESS-NONCE", nonce)
 		req.Header.Set("ACCESS-SIGNATURE", signature)
+	}
+	if options.Params != nil {
+		req.URL.RawQuery = options.Params.Encode()
 	}
 
 	res, err := c.HTTPClient.Do(req)

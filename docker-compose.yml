@@ -24,6 +24,8 @@ services:
     command: "air -c .air.ham_trader.toml"
     env_file:
       - ./backend/.env
+    tty: true
+    stdin_open: true
     volumes:
       - ./backend:/app
 

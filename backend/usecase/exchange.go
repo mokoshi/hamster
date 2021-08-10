@@ -3,20 +3,39 @@ package usecase
 import (
 	"hamster/domain/model"
 	"hamster/domain/repository"
+	"time"
 )
 
 type ExchangeUsecase interface {
 	GetOpenOrders() ([]*model.Order, error)
+
+	GetRateHistories(from time.Time, to time.Time) ([]*model.RateHistory, error)
+	SyncCurrentRate(orderType string, pair string) (*model.RateHistory, error)
 }
 
 type ExchangeUsecaseImpl struct {
-	OrderRepository repository.OrderRepository
+	OrderRepository       repository.OrderRepository
+	RateHistoryRepository repository.RateHistoryRepository
 }
 
-func NewExchangeUsecase(myOrderRepository repository.OrderRepository) ExchangeUsecase {
-	return &ExchangeUsecaseImpl{OrderRepository: myOrderRepository}
+func NewExchangeUsecase(
+	orderRepository repository.OrderRepository,
+	rateHistoryRepository repository.RateHistoryRepository,
+) ExchangeUsecase {
+	return &ExchangeUsecaseImpl{
+		OrderRepository:       orderRepository,
+		RateHistoryRepository: rateHistoryRepository,
+	}
 }
 
 func (u *ExchangeUsecaseImpl) GetOpenOrders() ([]*model.Order, error) {
 	return u.OrderRepository.GetOpenOrders()
+}
+
+func (u *ExchangeUsecaseImpl) GetRateHistories(from time.Time, to time.Time) ([]*model.RateHistory, error) {
+	return u.RateHistoryRepository.GetRateHistories(from, to)
+}
+
+func (u *ExchangeUsecaseImpl) SyncCurrentRate(orderType string, pair string) (*model.RateHistory, error) {
+	return u.RateHistoryRepository.SyncCurrentRate(orderType, pair)
 }

@@ -29,9 +29,10 @@ func main() {
 	orderBooksHistoryPersistence := persistence.NewOrderBooksHistoryPersistence(db.DB)
 	orderExternal := external.NewOrderExternal(ccClient)
 	balanceExternal := external.NewBalanceExternal(ccClient)
+	rateHistoryRepository := persistence.NewRateHistoryPersistence(db.DB, ccClient)
 
 	orderBooksHistoryUsecase := usecase.NewOrderBooksHistoryUsecase(orderBooksHistoryPersistence)
-	exchangeUsecase := usecase.NewExchangeUsecase(orderExternal)
+	exchangeUsecase := usecase.NewExchangeUsecase(orderExternal, rateHistoryRepository)
 	accountUsecase := usecase.NewAccountUsecase(balanceExternal)
 
 	orderBooksHistoryHandler := handler.NewOrderBooksHistoryHandler(orderBooksHistoryUsecase)
@@ -45,6 +46,7 @@ func main() {
 	e.GET("/health_check", healthCheckHandler.Check)
 	e.GET("/order_books_histories", orderBooksHistoryHandler.GetHistories)
 	e.GET("/exchange/open_orders", exchangeHandler.GetOpenOrders)
+	e.GET("/exchange/rate_histories", exchangeHandler.GetRateHistories)
 	e.GET("/account/balance", accountHandler.GetBalance)
 	e.Logger.Fatal(e.Start(":4100"))
 }

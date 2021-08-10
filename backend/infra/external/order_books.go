@@ -15,7 +15,10 @@ type OrderBooksExternal struct {
 }
 
 func NewOrderBooksExternal(client *cc_client.Client) repository.OrderBooksRepository {
-	return &OrderBooksExternal{Client: client}
+	return &OrderBooksExternal{
+		Client:     client,
+		orderBooks: model.NewOrderBooks(nil, nil),
+	}
 }
 
 func (obe *OrderBooksExternal) Get(refresh bool) (*model.OrderBooks, error) {
@@ -37,13 +40,15 @@ func (obe *OrderBooksExternal) Get(refresh bool) (*model.OrderBooks, error) {
 }
 
 func (obe *OrderBooksExternal) Subscribe(listener func(books *model.OrderBooks)) error {
-	// まだキャッシュがない場合は、一度 API 叩いて取得する
-	if obe.orderBooks == nil {
-		_, err := obe.Get(false)
-		if err != nil {
-			return err
-		}
-	}
+	// Subscribe する前に一度APIで情報を取っておきたいが、
+	// APIでの更新とSubscribeの更新タイミングの問題で古いデータが残ってしまう可能性がありそう
+	// とりあえず API 呼び出しはしないようにしておく
+	//if obe.orderBooks == nil {
+	//	_, err := obe.Get(false)
+	//	if err != nil {
+	//		return err
+	//	}
+	//}
 
 	err := obe.Client.SubscribeOrderBooks(func(pair string, diff *cc_client.OrderBooks) {
 		asks, bids := parseOrders(diff)

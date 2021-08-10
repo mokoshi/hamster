@@ -3,7 +3,7 @@ package model
 import "time"
 
 type OrderBooksHistory struct {
-	ID                 uint
+	Id                 uint64
 	Time               time.Time
 	LowestAskPrice     float64
 	LowestAskQuantity  float64

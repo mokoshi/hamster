@@ -19,21 +19,25 @@ export class OrderBooksHistory {
 
 export function useOrderBookHistoriesQuery(from: number, to: number) {
   const key = `${from}-${to}`;
-  return useQuery<OrderBooksHistory[]>(key, async () => {
-    const { data } = await apiClient.get('/order_books_histories', {
-      params: { from, to },
-    });
+  return useQuery<OrderBooksHistory[]>(
+    key,
+    async () => {
+      const { data } = await apiClient.get('/order_books_histories', {
+        params: { from, to },
+      });
 
-    return data.map(
-      (h: any) =>
-        new OrderBooksHistory(
-          h.id,
-          h.time,
-          h.lowestAskPrice,
-          h.lowestAskQuantity,
-          h.highestBidPrice,
-          h.highestBidQuantity,
-        ),
-    );
-  });
+      return data.map(
+        (h: any) =>
+          new OrderBooksHistory(
+            h.id,
+            h.time,
+            h.lowestAskPrice,
+            h.lowestAskQuantity,
+            h.highestBidPrice,
+            h.highestBidQuantity,
+          ),
+      );
+    },
+    { keepPreviousData: true },
+  );
 }

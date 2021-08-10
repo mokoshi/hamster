@@ -40,3 +40,10 @@ type Balance struct {
 	JpyDebt      string `json:"jpy_debt"`
 	BtcDebt      string `json:"btc_debt"`
 }
+
+type Rate struct {
+	Success bool   `json:"success"`
+	Rate    string `json:"rate"`
+	Price   string `json:"price"`
+	Amount  string `json:"amount"`
+}

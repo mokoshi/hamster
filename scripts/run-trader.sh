@@ -2,4 +2,4 @@
 
 set -eux
 
-docker-compose run --rm trader
+docker-compose up trader
