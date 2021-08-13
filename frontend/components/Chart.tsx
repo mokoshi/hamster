@@ -1,12 +1,14 @@
 import React, { useMemo } from 'react';
-import { OrderBooksHistory } from '../model/orderBooksHistory';
 import { Line, LineProps, Serie } from '@nivo/line';
 import dayjs from 'dayjs';
+import { OrderBooksHistory } from '../model/orderBooksHistory';
+import { OrderBooksMovingAverage } from '../model/orderBooksMovingAverage';
 
 interface Props {
   from: number;
   to: number;
   orderBooksHistories?: OrderBooksHistory[];
+  orderBooksMovingAverages?: OrderBooksMovingAverage[];
 }
 
 const chartProps: Partial<LineProps> = {
@@ -30,7 +32,7 @@ const chartProps: Partial<LineProps> = {
 };
 
 const Chart: React.FC<Props> = (props) => {
-  const { from, to, orderBooksHistories } = props;
+  const { from, to, orderBooksHistories, orderBooksMovingAverages } = props;
 
   const asks: Serie = useMemo(() => {
     return {
@@ -54,7 +56,29 @@ const Chart: React.FC<Props> = (props) => {
     };
   }, [orderBooksHistories]);
 
-  const data: Serie[] = useMemo(() => [asks, bids], [asks, bids]);
+  const mvAsks: Serie = useMemo(() => {
+    return {
+      id: 'mvAsks',
+      data:
+        orderBooksMovingAverages?.map((a) => ({
+          x: a.unix,
+          y: a.askPrice,
+        })) ?? [],
+    };
+  }, [orderBooksMovingAverages]);
+
+  const mvBids: Serie = useMemo(() => {
+    return {
+      id: 'mvBids',
+      data:
+        orderBooksMovingAverages?.map((a) => ({
+          x: a.unix,
+          y: a.bidPrice,
+        })) ?? [],
+    };
+  }, [orderBooksMovingAverages]);
+
+  const data: Serie[] = useMemo(() => [asks, bids, mvAsks, mvBids], [asks, bids, mvAsks, mvBids]);
   const xScale: LineProps['xScale'] = useMemo(
     () => ({
       type: 'linear',
@@ -63,10 +87,19 @@ const Chart: React.FC<Props> = (props) => {
     }),
     [from, to],
   );
-  const yScale: LineProps['yScale'] = useMemo(
-    () => ({ type: 'linear', min: 4000000, max: 6000000 }),
-    [],
-  );
+  const yScale: LineProps['yScale'] = useMemo(() => {
+    let min = Number.MAX_SAFE_INTEGER;
+    let max = 0;
+    for (let h of orderBooksHistories ?? []) {
+      if (max < h.lowestAskPrice) {
+        max = h.lowestAskPrice;
+      }
+      if (min > h.highestBidPrice) {
+        min = h.highestBidPrice;
+      }
+    }
+    return { type: 'linear', min: min - 1000, max: max + 1000 };
+  }, [orderBooksHistories]);
 
   return (
     <Line
@@ -77,6 +110,9 @@ const Chart: React.FC<Props> = (props) => {
       yScale={yScale}
       curve='linear'
       data={data}
+      animate={false}
+      useMesh
+      isInteractive
     />
   );
 };

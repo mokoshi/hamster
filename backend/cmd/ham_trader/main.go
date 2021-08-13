@@ -27,14 +27,13 @@ func main() {
 
 	ccClient := cc_client.NewClient(common.Env.CoincheckApiKey, common.Env.CoincheckApiSecret)
 
-	orderBooksHistoryPersistence := persistence.NewOrderBooksHistoryPersistence(db.DB)
+	orderBooksRepository := persistence.NewOrderBooksRepository(ccClient, db.DB)
 	orderExternal := external.NewOrderExternal(ccClient)
 
 	rateHistoryRepository := persistence.NewRateHistoryPersistence(db.DB, ccClient)
-	orderBookRepository := external.NewOrderBooksExternal(ccClient)
 
 	exchangeUsecase := usecase.NewExchangeUsecase(orderExternal, rateHistoryRepository)
-	orderBooksHistoryUsecase := usecase.NewOrderBooksHistoryUsecase(orderBooksHistoryPersistence)
+	orderBooksUsecase := usecase.NewOrderBooksUsecase(orderBooksRepository)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := &sync.WaitGroup{}
@@ -48,7 +47,7 @@ func main() {
 	}()
 
 	// 板情報を同期する goroutine
-	orderBookRepository.Subscribe(func(orderBooks *model.OrderBooks) {
+	orderBooksRepository.SubscribeLatest(func(orderBooks *model.OrderBooks) {
 		lowestAsk := orderBooks.GetLowestAsk()
 		highestBid := orderBooks.GetHighestBid()
 		fmt.Printf(
@@ -57,7 +56,7 @@ func main() {
 			highestBid.Price,
 		)
 
-		orderBooksHistoryUsecase.WriteWithBuffering(lowestAsk, highestBid)
+		orderBooksUsecase.WriteWithBuffering(lowestAsk, highestBid, 10)
 	})
 
 	// レートを同期する goroutine

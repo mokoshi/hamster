@@ -18,11 +18,12 @@ export class OrderBooksHistory {
 }
 
 export function useOrderBookHistoriesQuery(from: number, to: number) {
-  const key = `${from}-${to}`;
+  const path = '/order_books/histories';
+  const key = `${path}:${from}-${to}`;
   return useQuery<OrderBooksHistory[]>(
     key,
     async () => {
-      const { data } = await apiClient.get('/order_books_histories', {
+      const { data } = await apiClient.get(path, {
         params: { from, to },
       });
 

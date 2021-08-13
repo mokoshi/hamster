@@ -1,33 +1,35 @@
-package external
+package persistence
 
 import (
+	"gorm.io/gorm"
 	"hamster/domain/model"
 	"hamster/domain/repository"
 	"hamster/lib/cc_client"
 	"strconv"
+	"time"
 )
 
-type OrderBooksExternal struct {
-	Client *cc_client.Client
-
-	// キャッシュ
+type OrderBooksRepository struct {
+	client     *cc_client.Client
+	db         *gorm.DB
 	orderBooks *model.OrderBooks
 }
 
-func NewOrderBooksExternal(client *cc_client.Client) repository.OrderBooksRepository {
-	return &OrderBooksExternal{
-		Client:     client,
+func NewOrderBooksRepository(client *cc_client.Client, db *gorm.DB) repository.OrderBooksRepository {
+	return &OrderBooksRepository{
+		client:     client,
+		db:         db,
 		orderBooks: model.NewOrderBooks(nil, nil),
 	}
 }
 
-func (obe *OrderBooksExternal) Get(refresh bool) (*model.OrderBooks, error) {
+func (obe *OrderBooksRepository) FetchCurrent(refresh bool) (*model.OrderBooks, error) {
 	// キャッシュがある場合はそのまま返す
 	if !refresh && obe.orderBooks != nil {
 		return obe.orderBooks, nil
 	}
 
-	res, err := obe.Client.GetOrderBooks()
+	res, err := obe.client.GetOrderBooks()
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +41,7 @@ func (obe *OrderBooksExternal) Get(refresh bool) (*model.OrderBooks, error) {
 	return obe.orderBooks, nil
 }
 
-func (obe *OrderBooksExternal) Subscribe(listener func(books *model.OrderBooks)) error {
+func (obe *OrderBooksRepository) SubscribeLatest(listener func(books *model.OrderBooks)) error {
 	// Subscribe する前に一度APIで情報を取っておきたいが、
 	// APIでの更新とSubscribeの更新タイミングの問題で古いデータが残ってしまう可能性がありそう
 	// とりあえず API 呼び出しはしないようにしておく
@@ -50,7 +52,7 @@ func (obe *OrderBooksExternal) Subscribe(listener func(books *model.OrderBooks))
 	//	}
 	//}
 
-	err := obe.Client.SubscribeOrderBooks(func(pair string, diff *cc_client.OrderBooks) {
+	err := obe.client.SubscribeOrderBooks(func(pair string, diff *cc_client.OrderBooks) {
 		asks, bids := parseOrders(diff)
 		obe.orderBooks.Update(asks, bids)
 
@@ -58,6 +60,32 @@ func (obe *OrderBooksExternal) Subscribe(listener func(books *model.OrderBooks))
 	})
 
 	return err
+}
+
+func (obhp *OrderBooksRepository) GetHistories(from time.Time, to time.Time) ([]*model.OrderBooksHistory, error) {
+	var histories []*model.OrderBooksHistory
+	obhp.db.Where("time BETWEEN ? AND ?", from, to).Order("time").Find(&histories)
+	return histories, nil
+}
+
+func (obhp *OrderBooksRepository) GetMovingAverages(from time.Time, to time.Time) ([]*model.OrderBooksMovingAverage, error) {
+	var averages []*model.OrderBooksMovingAverage
+	obhp.db.Where("time BETWEEN ? AND ?", from, to).Order("time").Find(&averages)
+	return averages, nil
+}
+
+func (obhp *OrderBooksRepository) CreateHistories(histories []*model.OrderBooksHistory) error {
+	if err := obhp.db.Create(histories).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+func (obhp *OrderBooksRepository) CreateMovingAverages(averages []*model.OrderBooksMovingAverage) error {
+	if err := obhp.db.Create(averages).Error; err != nil {
+		return err
+	}
+	return nil
 }
 
 func parseOrders(res *cc_client.OrderBooks) (asks []*model.OrderBookItem, bids []*model.OrderBookItem) {

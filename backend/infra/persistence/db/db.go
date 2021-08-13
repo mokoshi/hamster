@@ -23,6 +23,7 @@ func Init() (err error) {
 	err = DB.AutoMigrate(
 		&model.TradingHistory{},
 		&gorm_model.OrderBooksHistory{},
+		&gorm_model.OrderBooksMovingAverage{},
 		&gorm_model.RateHistory{},
 	)
 	if err != nil {

@@ -6,7 +6,7 @@ import (
 )
 
 type OrderBooksHistory struct {
-	ID                 uint64    `json:"id"`
+	Id                 uint64    `json:"id"`
 	Time               time.Time `json:"time"`
 	LowestAskPrice     float64   `json:"lowestAskPrice"`
 	LowestAskQuantity  float64   `json:"lowestAskQuantity"`
@@ -16,7 +16,7 @@ type OrderBooksHistory struct {
 
 func NewOrderBooksHistory(model *model.OrderBooksHistory) *OrderBooksHistory {
 	return &OrderBooksHistory{
-		ID:                 model.Id,
+		Id:                 model.Id,
 		Time:               model.Time,
 		LowestAskPrice:     model.LowestAskPrice,
 		LowestAskQuantity:  model.LowestAskQuantity,

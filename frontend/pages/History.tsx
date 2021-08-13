@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import Card from '../components/Card';
 import dayjs from 'dayjs';
 import Chart from '../components/Chart';
+import { useOrderBookMovingAveragesQuery } from '../model/orderBooksMovingAverage';
 
 const History: React.FC = () => {
   return (
@@ -20,7 +21,12 @@ const OrderBooksHistoryContent: React.FC = () => {
   const from = useMemo(() => now - 60, [now]);
   const to = now;
 
-  const { data: orderBooksHistories, isLoading } = useOrderBookHistoriesQuery(from, to);
+  const { data: orderBooksHistories, isLoading: historyIsLoading } = useOrderBookHistoriesQuery(
+    from,
+    to,
+  );
+  const { data: orderBooksMovingAverages, isLoading: averageIsLoading } =
+    useOrderBookMovingAveragesQuery(from, to);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -42,9 +48,15 @@ const OrderBooksHistoryContent: React.FC = () => {
         </Stack>
       </RadioGroup>
 
-      {isLoading && <Spinner />}
+      {historyIsLoading && <Spinner />}
+      {averageIsLoading && <Spinner />}
 
-      <Chart from={from} to={to} orderBooksHistories={orderBooksHistories} />
+      <Chart
+        from={from}
+        to={to}
+        orderBooksHistories={orderBooksHistories}
+        orderBooksMovingAverages={orderBooksMovingAverages}
+      />
     </div>
   );
 };
