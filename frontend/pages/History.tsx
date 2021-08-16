@@ -1,27 +1,27 @@
-import { useOrderBookHistoriesQuery } from '../model/orderBooksHistory';
 import { Radio, RadioGroup, Spinner, Stack } from '@chakra-ui/react';
 import React, { useEffect, useMemo, useState } from 'react';
 import Card from '../components/Card';
 import dayjs from 'dayjs';
 import Chart from '../components/Chart';
 import { useOrderBookMovingAveragesQuery } from '../model/orderBooksMovingAverage';
+import { useOrderBooksSnapshotsQuery } from '../model/orderBooksSnapshot';
 
 const History: React.FC = () => {
   return (
     <Card title='履歴'>
-      <OrderBooksHistoryContent />
+      <OrderBooksSnapshotContent />
     </Card>
   );
 };
 
-const OrderBooksHistoryContent: React.FC = () => {
+const OrderBooksSnapshotContent: React.FC = () => {
   const [scale, setScale] = useState('0');
   const [now, setNow] = useState(dayjs('2021-08-10 18:00:00').unix());
 
   const from = useMemo(() => now - 60, [now]);
   const to = now;
 
-  const { data: orderBooksHistories, isLoading: historyIsLoading } = useOrderBookHistoriesQuery(
+  const { data: orderBooksSnapshots, isLoading: historyIsLoading } = useOrderBooksSnapshotsQuery(
     from,
     to,
   );
@@ -54,7 +54,7 @@ const OrderBooksHistoryContent: React.FC = () => {
       <Chart
         from={from}
         to={to}
-        orderBooksHistories={orderBooksHistories}
+        orderBooksSnapshots={orderBooksSnapshots}
         orderBooksMovingAverages={orderBooksMovingAverages}
       />
     </div>

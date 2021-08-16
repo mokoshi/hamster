@@ -25,9 +25,9 @@ func NewExchangeHandler(u usecase.ExchangeUsecase) ExchangeHandler {
 func (u ExchangeHandlerImpl) GetOpenOrders(c echo.Context) (err error) {
 	orders, err := u.ExchangeUsecase.GetOpenOrders()
 
-	res := make([]*resource.Order, len(orders))
+	res := make([]*resource.OpenOrder, len(orders))
 	for i, order := range orders {
-		res[i] = resource.NewOrder(order)
+		res[i] = resource.NewOpenOrder(order)
 	}
 
 	return c.JSON(http.StatusOK, res)

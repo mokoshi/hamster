@@ -5,8 +5,8 @@ import (
 	"time"
 )
 
-type OrderBooksHistory struct {
-	model.OrderBooksHistory
+type WorldTradeMovingAverage struct {
+	model.WorldTradeMovingAverage
 	Id   uint64    `gorm:"primary_key"`
 	Time time.Time `gorm:"index"`
 }

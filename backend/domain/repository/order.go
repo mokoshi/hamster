@@ -5,5 +5,7 @@ import (
 )
 
 type OrderRepository interface {
-	GetOpenOrders() ([]*model.Order, error)
+	SyncOpenOrders() ([]*model.OpenOrder, error)
+	GetOpenOrderCount() int
+	RequestOrder(request *model.OrderRequest) (*model.OrderRequest, error)
 }

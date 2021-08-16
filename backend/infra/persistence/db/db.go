@@ -3,7 +3,6 @@ package db
 import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
-	"hamster/domain/model"
 	"hamster/infra/persistence/db/gorm_model"
 	"hamster/lib/clog"
 )
@@ -21,10 +20,15 @@ func Init() (err error) {
 
 	// マイグレーションも走らせちゃう
 	err = DB.AutoMigrate(
-		&model.TradingHistory{},
-		&gorm_model.OrderBooksHistory{},
+		&gorm_model.Order{},
+		&gorm_model.OpenOrder{},
+		&gorm_model.OrderBooksSnapshot{},
 		&gorm_model.OrderBooksMovingAverage{},
 		&gorm_model.RateHistory{},
+		&gorm_model.TradeProcedure{},
+		&gorm_model.Transaction{},
+		&gorm_model.WorldTrade{},
+		&gorm_model.WorldTradeMovingAverage{},
 	)
 	if err != nil {
 		clog.Logger.Fatal("Failed to run auto-migration...", err)

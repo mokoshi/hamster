@@ -6,12 +6,13 @@ import (
 )
 
 type OrderBooksRepository interface {
-	FetchCurrent(refresh bool) (*model.OrderBooks, error)
-	SubscribeLatest(listener func(*model.OrderBooks)) error
+	SyncOrderBooks() (*model.OrderBooks, error)
+	// TODO StartSync() ?
+	SubscribeAndSync(listener func(*model.OrderBooks)) error
 
-	GetHistories(from time.Time, to time.Time) ([]*model.OrderBooksHistory, error)
-	CreateHistories([]*model.OrderBooksHistory) error
-
+	GetSnapshots(from time.Time, to time.Time) ([]*model.OrderBooksSnapshot, error)
 	GetMovingAverages(from time.Time, to time.Time) ([]*model.OrderBooksMovingAverage, error)
-	CreateMovingAverages([]*model.OrderBooksMovingAverage) error
+
+	GetLatestSnapshot(offsetFromLatest int) *model.OrderBooksSnapshot
+	GetLatestMovingAverage(offsetFromLatest int) *model.OrderBooksMovingAverage
 }

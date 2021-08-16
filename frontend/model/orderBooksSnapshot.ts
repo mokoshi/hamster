@@ -2,7 +2,7 @@ import apiClient from '../lib/apiClient';
 import { useQuery } from 'react-query';
 import dayjs from 'dayjs';
 
-export class OrderBooksHistory {
+export class OrderBooksSnapshot {
   unix: number;
 
   constructor(
@@ -17,10 +17,10 @@ export class OrderBooksHistory {
   }
 }
 
-export function useOrderBookHistoriesQuery(from: number, to: number) {
-  const path = '/order_books/histories';
+export function useOrderBooksSnapshotsQuery(from: number, to: number) {
+  const path = '/order_books/snapshots';
   const key = `${path}:${from}-${to}`;
-  return useQuery<OrderBooksHistory[]>(
+  return useQuery<OrderBooksSnapshot[]>(
     key,
     async () => {
       const { data } = await apiClient.get(path, {
@@ -29,7 +29,7 @@ export function useOrderBookHistoriesQuery(from: number, to: number) {
 
       return data.map(
         (h: any) =>
-          new OrderBooksHistory(
+          new OrderBooksSnapshot(
             h.id,
             h.time,
             h.lowestAskPrice,

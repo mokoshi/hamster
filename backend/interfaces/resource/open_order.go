@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-type Order struct {
+type OpenOrder struct {
 	Id                     uint64    `json:"id"`
 	OrderType              string    `json:"orderType"`
 	Rate                   float64   `json:"rate"`
@@ -16,8 +16,8 @@ type Order struct {
 	CreatedAt              time.Time `json:"createdAt"`
 }
 
-func NewOrder(model *model.Order) *Order {
-	return &Order{
+func NewOpenOrder(model *model.OpenOrder) *OpenOrder {
+	return &OpenOrder{
 		Id:                     model.Id,
 		OrderType:              model.OrderType,
 		Rate:                   model.Rate,

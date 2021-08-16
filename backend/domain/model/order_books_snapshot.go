@@ -2,7 +2,7 @@ package model
 
 import "time"
 
-type OrderBooksHistory struct {
+type OrderBooksSnapshot struct {
 	Id                 uint64
 	Time               time.Time
 	LowestAskPrice     float64

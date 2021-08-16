@@ -1,13 +1,13 @@
 import React, { useMemo } from 'react';
 import { Line, LineProps, Serie } from '@nivo/line';
 import dayjs from 'dayjs';
-import { OrderBooksHistory } from '../model/orderBooksHistory';
+import { OrderBooksSnapshot } from '../model/orderBooksSnapshot';
 import { OrderBooksMovingAverage } from '../model/orderBooksMovingAverage';
 
 interface Props {
   from: number;
   to: number;
-  orderBooksHistories?: OrderBooksHistory[];
+  orderBooksSnapshots?: OrderBooksSnapshot[];
   orderBooksMovingAverages?: OrderBooksMovingAverage[];
 }
 
@@ -32,29 +32,29 @@ const chartProps: Partial<LineProps> = {
 };
 
 const Chart: React.FC<Props> = (props) => {
-  const { from, to, orderBooksHistories, orderBooksMovingAverages } = props;
+  const { from, to, orderBooksSnapshots, orderBooksMovingAverages } = props;
 
   const asks: Serie = useMemo(() => {
     return {
       id: 'asks',
       data:
-        orderBooksHistories?.map((h) => ({
+        orderBooksSnapshots?.map((h) => ({
           x: h.unix,
           y: h.lowestAskPrice,
         })) ?? [],
     };
-  }, [orderBooksHistories]);
+  }, [orderBooksSnapshots]);
 
   const bids: Serie = useMemo(() => {
     return {
       id: 'bids',
       data:
-        orderBooksHistories?.map((h) => ({
+        orderBooksSnapshots?.map((h) => ({
           x: h.unix,
           y: h.highestBidPrice,
         })) ?? [],
     };
-  }, [orderBooksHistories]);
+  }, [orderBooksSnapshots]);
 
   const mvAsks: Serie = useMemo(() => {
     return {
@@ -90,7 +90,7 @@ const Chart: React.FC<Props> = (props) => {
   const yScale: LineProps['yScale'] = useMemo(() => {
     let min = Number.MAX_SAFE_INTEGER;
     let max = 0;
-    for (let h of orderBooksHistories ?? []) {
+    for (let h of orderBooksSnapshots ?? []) {
       if (max < h.lowestAskPrice) {
         max = h.lowestAskPrice;
       }
@@ -99,7 +99,7 @@ const Chart: React.FC<Props> = (props) => {
       }
     }
     return { type: 'linear', min: min - 1000, max: max + 1000 };
-  }, [orderBooksHistories]);
+  }, [orderBooksSnapshots]);
 
   return (
     <Line

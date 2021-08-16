@@ -9,10 +9,18 @@ type OrderBooks struct {
 	Asks [][2]interface{} `json:"asks"`
 	Bids [][2]interface{} `json:"bids"`
 }
-
 type OrderBooksDiffStream [2]json.RawMessage
 
-type Order struct {
+type Trade struct {
+	Id        uint64 `json:"id"`
+	Pair      string `json:"pair"`
+	Rate      string `json:"rate"`
+	Amount    string `json:"amount"`
+	OrderType string `json:"order_type"`
+}
+type TradeStream [5]json.RawMessage
+
+type OpenOrder struct {
 	Id                     uint64    `json:"id"`
 	OrderType              string    `json:"order_type"`
 	Rate                   string    `json:"rate"`
@@ -23,8 +31,44 @@ type Order struct {
 	CreatedAt              time.Time `json:"created_at"`
 }
 type OpenOrders struct {
-	Success bool    `json:"success"`
-	Orders  []Order `json:"orders"`
+	Success bool        `json:"success"`
+	Orders  []OpenOrder `json:"orders"`
+}
+
+type Order struct {
+	Success      bool      `json:"success"`
+	Id           uint64    `json:"id"`
+	OrderType    string    `json:"order_type"`
+	Rate         string    `json:"rate"`
+	Pair         string    `json:"pair"`
+	Amount       string    `json:"amount"`
+	StopLossRate string    `json:"stop_loss_rate"`
+	CreatedAt    time.Time `json:"created_at"`
+}
+
+type Transactions struct {
+	Success      bool          `json:"success"`
+	Transactions []Transaction `json:"transactions"`
+}
+type Transaction struct {
+	Id        uint64    `json:"id"`
+	OrderId   uint64    `json:"order_id"`
+	CreatedAt time.Time `json:"created_at"`
+	Funds     struct {
+		Btc string `json:"btc"`
+		Jpy string `json:"jpy"`
+	} `json:"funds"`
+	Pair        string `json:"pair"`
+	Rate        string `json:"rate"`
+	FeeCurrency string `json:"fee_currency"`
+	Fee         string `json:"fee"`
+	Liquidity   string `json:"liquidity"`
+	Side        string `json:"side"`
+}
+
+type OrderCancel struct {
+	Success bool   `json:"success"`
+	Id      uint64 `json:"id"`
 }
 
 type Balance struct {

@@ -1,6 +1,7 @@
 package cc_client
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/websocket"
@@ -20,26 +21,29 @@ const (
 )
 
 type Client struct {
-	ApiUrl        string
-	WebSocketUrl  string
-	ApiKey        string
-	ApiSecret     string
-	HTTPClient    *http.Client
-	WebSocketConn *websocket.Conn
+	apiUrl           string
+	webSocketUrl     string
+	apiKey           string
+	apiSecret        string
+	httpClient       *http.Client
+	orderBooksSocket *websocket.Conn
+	tradesSocket     *websocket.Conn
 }
 
+type RequestBody map[string]string
 type RequestOptions struct {
 	Authorization bool
 	Params        url.Values
+	Body          RequestBody
 }
 
 func NewClient(apiKey string, apiSecret string) *Client {
 	return &Client{
-		ApiUrl:       ApiUrl,
-		WebSocketUrl: WebSocketUrl,
-		ApiKey:       apiKey,
-		ApiSecret:    apiSecret,
-		HTTPClient: &http.Client{
+		apiUrl:       ApiUrl,
+		webSocketUrl: WebSocketUrl,
+		apiKey:       apiKey,
+		apiSecret:    apiSecret,
+		httpClient: &http.Client{
 			Timeout: time.Second * 5,
 		},
 	}
@@ -89,6 +93,19 @@ func (c *Client) GetOpenOrders() (*OpenOrders, error) {
 	return &res, nil
 }
 
+func (c *Client) GetRecentTransactions() (*Transactions, error) {
+	opts := &RequestOptions{
+		Authorization: true,
+	}
+	res := Transactions{}
+	if err := c.sendRequest("GET", "/exchange/orders/transactions", opts, &res); err != nil {
+		clog.Logger.Error(err)
+		return nil, err
+	}
+
+	return &res, nil
+}
+
 func (c *Client) GetBalance() (*Balance, error) {
 	opts := &RequestOptions{
 		Authorization: true,
@@ -102,15 +119,75 @@ func (c *Client) GetBalance() (*Balance, error) {
 	return &res, nil
 }
 
-func (c *Client) SubscribeOrderBooks(listener func(pair string, diff *OrderBooks)) error {
-	if err := c.connectWebSocket(); err != nil {
+func (c *Client) CreateOrder(
+	pair string,
+	orderType string,
+	rate *float64,
+	amount *float64,
+	marketBuyAmount *float64,
+	stopLossRate *float64,
+) (*Order, error) {
+	body := RequestBody{
+		"pair":       pair,
+		"order_type": orderType,
+	}
+	if rate != nil {
+		body["rate"] = strconv.FormatFloat(*rate, 'f', 0, 64)
+	}
+	if amount != nil {
+		body["amount"] = strconv.FormatFloat(*amount, 'f', -1, 64)
+	}
+	if marketBuyAmount != nil {
+		body["market_buy_amount"] = strconv.FormatFloat(*marketBuyAmount, 'f', -1, 64)
+	}
+	if stopLossRate != nil {
+		body["stop_loss_rate"] = strconv.FormatFloat(*stopLossRate, 'f', -1, 64)
+	}
+	opts := &RequestOptions{
+		Authorization: true,
+		Body:          body,
+	}
+	res := Order{}
+	if err := c.sendRequest("POST", "/exchange/orders", opts, &res); err != nil {
+		clog.Logger.Error(err)
+		return nil, err
+	}
+
+	return &res, nil
+}
+
+func (c *Client) CancelOrder(id uint64) error {
+	opts := &RequestOptions{
+		Authorization: true,
+	}
+	res := OrderCancel{}
+	if err := c.sendRequest("DELETE", fmt.Sprintf("/exchange/orders/%d", id), opts, &res); err != nil {
+		clog.Logger.Error(err)
 		return err
 	}
+
+	return nil
+
+}
+
+func (c *Client) SubscribeOrderBooks(listener func(pair string, diff *OrderBooks)) error {
+	if c.orderBooksSocket != nil {
+		if err := c.orderBooksSocket.Close(); err != nil {
+			return err
+		}
+		c.orderBooksSocket = nil
+	}
+
+	conn, err := c.createWebSocketConnection()
+	if err != nil {
+		return err
+	}
+	c.orderBooksSocket = conn
 
 	go func() {
 		for {
 			// TODO 途中でエラーになったときにgoroutine再実行できるようにしたい
-			_, message, err := c.WebSocketConn.ReadMessage()
+			_, message, err := c.orderBooksSocket.ReadMessage()
 			if err != nil {
 				log.Println("read error:", err)
 				return
@@ -146,26 +223,100 @@ func (c *Client) SubscribeOrderBooks(listener func(pair string, diff *OrderBooks
 		return err
 	}
 
-	return c.WebSocketConn.WriteMessage(websocket.TextMessage, message)
+	return c.orderBooksSocket.WriteMessage(websocket.TextMessage, message)
 }
 
-func (c *Client) connectWebSocket() error {
-	if c.WebSocketConn != nil {
-		return nil
+func (c *Client) SubscribeTrades(listener func(trade *Trade)) error {
+	if c.tradesSocket != nil {
+		if err := c.tradesSocket.Close(); err != nil {
+			return err
+		}
+		c.tradesSocket = nil
 	}
 
-	conn, _, err := websocket.DefaultDialer.Dial(c.WebSocketUrl, nil)
+	conn, err := c.createWebSocketConnection()
 	if err != nil {
-		log.Fatal("dial:", err)
+		return err
 	}
-	c.WebSocketConn = conn
+	c.tradesSocket = conn
 
-	return nil
+	go func() {
+		for {
+			// TODO 途中でエラーになったときにgoroutine再実行できるようにしたい
+			_, message, err := c.tradesSocket.ReadMessage()
+			if err != nil {
+				log.Println("read error:", err)
+				return
+			}
+
+			stream := &TradeStream{}
+			if err = json.Unmarshal(message, &stream); err != nil {
+				fmt.Println(err)
+				return
+			}
+
+			trade := &Trade{}
+			if err = json.Unmarshal(stream[0], &trade.Id); err != nil {
+				fmt.Println(err)
+				return
+			}
+			if err = json.Unmarshal(stream[1], &trade.Pair); err != nil {
+				fmt.Println(err)
+				return
+			}
+			if err = json.Unmarshal(stream[2], &trade.Rate); err != nil {
+				fmt.Println(err)
+				return
+			}
+			if err = json.Unmarshal(stream[3], &trade.Amount); err != nil {
+				fmt.Println(err)
+				return
+			}
+			if err = json.Unmarshal(stream[4], &trade.OrderType); err != nil {
+				fmt.Println(err)
+				return
+			}
+
+			listener(trade)
+		}
+	}()
+
+	message, err := json.Marshal(map[string]string{
+		"type":    "subscribe",
+		"channel": "btc_jpy-trades",
+	})
+	if err != nil {
+		return err
+	}
+
+	return c.tradesSocket.WriteMessage(websocket.TextMessage, message)
 }
 
-func (c *Client) sendRequest(method string, path string, options *RequestOptions, responseBody interface{}) error {
-	url := c.ApiUrl + path
-	req, err := http.NewRequest(method, url, nil)
+func (c *Client) createWebSocketConnection() (*websocket.Conn, error) {
+	conn, _, err := websocket.DefaultDialer.Dial(c.webSocketUrl, nil)
+	if err != nil {
+		clog.Logger.Errorf("failed to connect websocket: %s", err)
+		return nil, err
+	}
+	return conn, nil
+}
+
+func (c *Client) sendRequest(method string, path string, options *RequestOptions, responseBody interface{}) (err error) {
+	var req *http.Request
+	var requestBody string
+
+	requestUrl := c.apiUrl + path
+
+	if method == "POST" && options.Body != nil {
+		jsonBytes, err := json.Marshal(options.Body)
+		if err != nil {
+			return err
+		}
+		req, err = http.NewRequest(method, requestUrl, bytes.NewBuffer(jsonBytes))
+		requestBody = string(jsonBytes)
+	} else {
+		req, err = http.NewRequest(method, requestUrl, nil)
+	}
 	if err != nil {
 		return err
 	}
@@ -175,10 +326,9 @@ func (c *Client) sendRequest(method string, path string, options *RequestOptions
 
 	if options.Authorization {
 		nonce := strconv.FormatInt(time.Now().UnixNano(), 10)
-		body := ""
-		signature := util.HmacSha256(nonce+url+body, c.ApiSecret)
+		signature := util.HmacSha256(nonce+requestUrl+requestBody, c.apiSecret)
 
-		req.Header.Set("ACCESS-KEY", c.ApiKey)
+		req.Header.Set("ACCESS-KEY", c.apiKey)
 		req.Header.Set("ACCESS-NONCE", nonce)
 		req.Header.Set("ACCESS-SIGNATURE", signature)
 	}
@@ -186,7 +336,7 @@ func (c *Client) sendRequest(method string, path string, options *RequestOptions
 		req.URL.RawQuery = options.Params.Encode()
 	}
 
-	res, err := c.HTTPClient.Do(req)
+	res, err := c.httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -203,7 +353,7 @@ func (c *Client) sendRequest(method string, path string, options *RequestOptions
 	}
 
 	if err = json.NewDecoder(res.Body).Decode(&responseBody); err != nil {
-		fmt.Println(err)
+		clog.Logger.Fatal(err)
 		return err
 	}
 

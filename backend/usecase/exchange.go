@@ -7,7 +7,7 @@ import (
 )
 
 type ExchangeUsecase interface {
-	GetOpenOrders() ([]*model.Order, error)
+	GetOpenOrders() ([]*model.OpenOrder, error)
 
 	GetRateHistories(from time.Time, to time.Time) ([]*model.RateHistory, error)
 	SyncCurrentRate(orderType string, pair string) (*model.RateHistory, error)
@@ -28,8 +28,8 @@ func NewExchangeUsecase(
 	}
 }
 
-func (u *ExchangeUsecaseImpl) GetOpenOrders() ([]*model.Order, error) {
-	return u.OrderRepository.GetOpenOrders()
+func (u *ExchangeUsecaseImpl) GetOpenOrders() ([]*model.OpenOrder, error) {
+	return u.OrderRepository.SyncOpenOrders()
 }
 
 func (u *ExchangeUsecaseImpl) GetRateHistories(from time.Time, to time.Time) ([]*model.RateHistory, error) {
